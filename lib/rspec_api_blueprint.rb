@@ -46,7 +46,7 @@ RSpec.configure do |config|
 
         # Request
         request_body = request.body.read
-        authorization_header = request.env ? request.env['Authorization'] : request.headers['Authorization']
+        authorization_header = request.env['HTTP_AUTHORIZATION']
 
         if request_body.present? || authorization_header.present?
           f.write "+ Request #{request.content_type}\n\n"
