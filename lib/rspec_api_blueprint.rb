@@ -18,6 +18,8 @@ RSpec.configure do |config|
   end
 
   config.after(:each, type: :request) do
+    next if example.metadata[:document] === false
+
     response ||= last_response
     request ||= last_request
 
