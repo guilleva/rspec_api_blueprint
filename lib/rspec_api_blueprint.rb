@@ -33,8 +33,8 @@ RSpec.configure do |config|
       end
 
       action = example_groups[-2][:description_args].first if example_groups[-2]
-      example_groups[-1][:description_args].first.match(/(\w+)\sRequests/)
-      file_name = $1.underscore
+      example_groups[-1][:description_args].first.match(/([\w\s]+)\sRequests/)
+      file_name = $1.underscore.gsub(/ /, '_')
 
       if defined? Rails
         file = File.join(Rails.root, "/api_docs/#{file_name}.txt")
