@@ -5,7 +5,7 @@ require "rspec_api_blueprint/string_extensions"
 RSpec.configure do |config|
   config.before(:suite) do
     if defined? Rails
-      api_docs_folder_path = File.join(Rails.root, '/api_docs/')
+      api_docs_folder_path = File.join(Rails.root, '/tmp/api_docs/')
     else
       api_docs_folder_path = File.join(File.expand_path('.'), '/api_docs/')
     end
@@ -37,7 +37,7 @@ RSpec.configure do |config|
       file_name = $1.underscore.gsub(/ /, '_')
 
       if defined? Rails
-        file = File.join(Rails.root, "/api_docs/#{file_name}.txt")
+        file = File.join(Rails.root, "/tmp/api_docs/#{file_name}.txt")
       else
         file = File.join(File.expand_path('.'), "/api_docs/#{file_name}.txt")
       end
