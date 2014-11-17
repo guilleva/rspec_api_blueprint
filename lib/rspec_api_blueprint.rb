@@ -17,19 +17,19 @@ RSpec.configure do |config|
     end
   end
 
-  config.after(:each, type: :request) do
+  config.after(:each, type: :request) do |example|
     next if example.metadata[:document] === false
 
     response ||= last_response
     request ||= last_request
 
     if response
-      example_group = example.metadata[:example_group]
+      example_group = example.example_group.metadata
       example_groups = []
 
       while example_group
         example_groups << example_group
-        example_group = example_group[:example_group]
+        example_group = example_group[:parent_example_group]
       end
 
       action = example_groups[-2][:description_args].first if example_groups[-2]
