@@ -58,13 +58,13 @@ RSpec.configure do |config|
         if request_body.present? || authorization_header.present?
           f.write "+ Request #{request.content_type}\n\n"
 
-          # Request Headers
-          if authorization_header.present?
-            f.write "+ Headers\n\n".indent(4)
-            current_env.each do |header, value|
-              f.write "#{header}: #{header}\n\n".indent(12)
-            end
+          ALLOWED_HEADERS = %w(HTTP_AUTHORIZATION X-HTTP_AUTHORIZATION X_HTTP_AUTHORIZATION REDIRECT_X_HTTP_AUTHORIZATION AUTHORIZATION CONTENT_TYPE)
+          f.write "+ Headers\n\n".indent(4)
+          current_env.each do |header, value|
+            next unless ALLOWED_HEADERS.include?(header)
+            f.write "#{header}: #{value}\n".indent(12)
           end
+          f.write "\n"
 
           # Request Body
           if request_body.present? && request.content_type == 'application/json'
