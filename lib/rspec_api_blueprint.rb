@@ -18,7 +18,7 @@ RSpec.configure do |config|
   end
 
   config.after(:each, type: :request) do |example|
-    next unless example.metadata[:document] === false
+    next unless example.metadata[:document] === true
 
     response ||= last_response
     request ||= last_request
