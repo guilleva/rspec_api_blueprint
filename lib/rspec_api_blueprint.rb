@@ -61,7 +61,9 @@ RSpec.configure do |config|
           # Request Headers
           if authorization_header.present?
             f.write "+ Headers\n\n".indent(4)
-            f.write "Authorization: #{authorization_header}\n\n".indent(12)
+            current_env.each do |header, value|
+              f.write "#{header}: #{header}\n\n".indent(12)
+            end
           end
 
           # Request Body
