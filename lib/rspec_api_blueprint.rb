@@ -20,9 +20,6 @@ RSpec.configure do |config|
   config.after(:each, type: :request) do |example|
     next unless example.metadata[:document] === true
 
-    response ||= last_response
-    request ||= last_request
-
     if response
       example_group = example.example_group.metadata
       example_groups = []
