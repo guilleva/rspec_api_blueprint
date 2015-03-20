@@ -73,7 +73,7 @@ RSpec.configure do |config|
         end
 
         # Response
-        f.write "+ Response #{response.status} (#{response.content_type})\n\n"
+        f.write "+ Response #{response.status} (#{response.content_type}; charset=#{response.charset})\n\n"
 
         if response.body.present? && response.content_type.to_s =~ /application\/json/
           f.write "#{JSON.pretty_generate(JSON.parse(response.body))}\n\n".indent(8)
