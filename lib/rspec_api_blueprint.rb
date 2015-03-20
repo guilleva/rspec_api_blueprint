@@ -35,7 +35,7 @@ RSpec.configure do |config|
       file_name = $1.underscore
 
       if defined? Rails
-        file = File.join(Rails.root, "/api_docs/#{file_name}.txt")
+        file = File.join(Rails.root, "/docs/api_docs/#{file_name}.txt")
       else
         file = File.join(File.expand_path('.'), "/api_docs/#{file_name}.txt")
       end
