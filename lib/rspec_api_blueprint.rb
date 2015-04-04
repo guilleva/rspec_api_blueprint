@@ -12,8 +12,33 @@ RSpec.configure do |config|
 
     Dir.mkdir(api_docs_folder_path) unless Dir.exists?(api_docs_folder_path)
 
-    Dir.glob(File.join(api_docs_folder_path, '*')).each do |f|
+    Dir.glob(File.join(api_docs_folder_path, '*_blueprint.md')).each do |f|
       File.delete(f)
+    end
+  end
+
+  config.after(:suite) do
+
+    if defined? Rails
+      api_docs_folder_path = File.join(Rails.root, '/docs/', '/api_docs/')
+    else
+      api_docs_folder_path = File.join(File.expand_path('.'), '/api_docs/')
+    end
+
+    append = ->(handle, file){ handle.puts File.read(File.join(api_docs_folder_path, file)) }
+
+    File.open(File.join(api_docs_folder_path ,'apiary.apib'), 'wb') do |apiary|
+      append.call(apiary, 'introduction.md')
+
+      Dir[File.join(api_docs_folder_path, '*_blueprint.md')].each do |file|
+        header = file.gsub('examples_blueprint.md', 'header.md')
+
+        if File.exists? header
+          append.call(apiary, File.basename(header))
+        end
+
+        append.call(apiary, File.basename(file))
+      end
     end
   end
 
@@ -33,20 +58,22 @@ RSpec.configure do |config|
         action = example_groups[-2][:description_args].first
         extra_description = example_groups[-2][:extra_documentation]
       end
-      example_groups[-1][:description_args].first.match(/(.+)\sRequests/)
-      file_name = $1.gsub(' ', '').underscore
+      example_groups[-1][:description_args].first.match(/(\w+)\sRequests/)
+      file_name = $1.underscore
 
       if defined? Rails
-        file = File.join(Rails.root, "/docs/api_docs/#{file_name}.txt")
+        file = File.join(Rails.root, "/docs/api_docs/#{file_name}_blueprint.md")
       else
-        file = File.join(File.expand_path('.'), "/api_docs/#{file_name}.txt")
+        file = File.join(File.expand_path('.'), "/api_docs/#{file_name}_blueprint.md")
       end
 
 
       File.open(file, 'a') do |f|
         # Resource & Action
         f.write "# #{action}\n"
-        f.write "#{extra_description}\n" if extra_description.present?
+        if extra_description.present?
+          f.write File.read(File.join(Rails.root, '/docs/api_docs', extra_description))
+        end
 
         # Request
         request_body = request.body.read
