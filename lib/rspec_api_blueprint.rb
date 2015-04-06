@@ -58,8 +58,8 @@ RSpec.configure do |config|
         action = example_groups[-2][:description_args].first
         extra_description = example_groups[-2][:extra_documentation]
       end
-      example_groups[-1][:description_args].first.match(/(\w+)\sRequests/)
-      file_name = $1.underscore
+      example_groups[-1][:description_args].first.match(/(.+)\sRequests/)
+      file_name = $1.gsub(' ','').underscore
 
       if defined? Rails
         file = File.join(Rails.root, "/docs/api_docs/#{file_name}_blueprint.md")
