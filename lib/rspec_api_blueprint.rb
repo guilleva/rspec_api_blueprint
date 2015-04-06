@@ -31,7 +31,7 @@ RSpec.configure do |config|
       append.call(apiary, 'introduction.md')
 
       Dir[File.join(api_docs_folder_path, '*_blueprint.md')].each do |file|
-        header = file.gsub('examples_blueprint.md', 'header.md')
+        header = file.gsub('_blueprint.md', '_header.md')
 
         if File.exists? header
           append.call(apiary, File.basename(header))
