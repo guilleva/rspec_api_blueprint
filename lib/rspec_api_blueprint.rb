@@ -35,6 +35,8 @@ RSpec.configure do |config|
 
         if File.exists? header
           append.call(apiary, File.basename(header))
+        else
+          apiary.puts "# Group #{File.basename(file)}"
         end
 
         append.call(apiary, File.basename(file))
