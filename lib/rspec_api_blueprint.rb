@@ -103,10 +103,11 @@ RSpec.configure do |config|
             f.write("\n")
           end
 
-          allowed_headers = %w(HTTP_AUTHORIZATION X-HTTP_AUTHORIZATION X_HTTP_AUTHORIZATION REDIRECT_X_HTTP_AUTHORIZATION AUTHORIZATION CONTENT_TYPE)
+          allowed_headers = %w(HTTP_AUTHORIZATION AUTHORIZATION CONTENT_TYPE)
           f.write "+ Headers\n\n".indent(4)
           current_env.each do |header, value|
             next unless allowed_headers.include?(header)
+            header = header.gsub(/HTTP_/, '') if header == 'HTTP_AUTHORIZATION'
             f.write "#{header}: #{value}\n".indent(12)
           end
           f.write "\n"
