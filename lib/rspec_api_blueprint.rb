@@ -36,7 +36,7 @@ RSpec.configure do |config|
         if File.exists? header
           append.call(apiary, File.basename(header))
         else
-          apiary.puts "# Group #{File.basename(file)}"
+          apiary.puts "# Group #{(File.basename(file, '_blueprint.md')).titleize}"
         end
 
         append.call(apiary, File.basename(file))
@@ -72,7 +72,18 @@ RSpec.configure do |config|
 
       File.open(file, 'a') do |f|
         # Resource & Action
-        f.write "# #{action}\n"
+        query_strings = URI.decode(request.env['QUERY_STRING']).split('&')
+        params = query_strings.map do |value|
+          value.gsub("[","%5B").gsub("]","%5D")
+        end
+
+        f.write "# #{action}"
+
+        unless params.empty?
+         f.write "?#{params.join('&')}"
+        end
+
+        f.write("\n")
         if extra_description.present?
           f.write File.read(File.join(Rails.root, '/docs/api_docs', extra_description))
         end
