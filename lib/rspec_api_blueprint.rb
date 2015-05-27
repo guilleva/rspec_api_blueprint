@@ -1,15 +1,14 @@
 require "rspec_api_blueprint/version"
 require "rspec_api_blueprint/string_extensions"
 
+def api_docs_folder_path
+  return File.join(Rails.root, '/docs/', '/api_docs/') if defined? Rails
+
+  File.join(File.expand_path('.'), '/api_docs/')
+end
 
 RSpec.configure do |config|
   config.before(:suite) do
-    if defined? Rails
-      api_docs_folder_path = File.join(Rails.root, '/docs/', '/api_docs/')
-    else
-      api_docs_folder_path = File.join(File.expand_path('.'), '/api_docs/')
-    end
-
     Dir.mkdir(api_docs_folder_path) unless Dir.exists?(api_docs_folder_path)
 
     Dir.glob(File.join(api_docs_folder_path, '*_blueprint.md')).each do |f|
@@ -18,13 +17,6 @@ RSpec.configure do |config|
   end
 
   config.after(:suite) do
-
-    if defined? Rails
-      api_docs_folder_path = File.join(Rails.root, '/docs/', '/api_docs/')
-    else
-      api_docs_folder_path = File.join(File.expand_path('.'), '/api_docs/')
-    end
-
     append = ->(handle, file){ handle.puts File.read(File.join(api_docs_folder_path, file)) }
 
     File.open(File.join(api_docs_folder_path ,'apiary.apib'), 'wb') do |apiary|
@@ -56,19 +48,26 @@ RSpec.configure do |config|
         example_group = example_group[:parent_example_group]
       end
 
-      if example_groups[-2]
-        action = example_groups[-2][:description_args].first
-        extra_description = example_groups[-2][:extra_documentation]
-      end
-      example_groups[-1][:description_args].first.match(/(.+)\sRequests/)
+      # example_groups[0] (Action) -> Check and employee out of a seat [DELETE]
+      # example_groups[1] (Resource) -> Check ins [/api/1/check_ins]
+      # example_groups[2] (Resource group name) -> Check In requests
+
+      # #   Group Name
+      # ##  Collection [/collection]
+      # ### Action Name [GET]
+
+      example_groups[2][:description_args].first.match(/(.+)\sRequests/)
       file_name = $1.gsub(' ','').underscore
 
-      if defined? Rails
-        file = File.join(Rails.root, "/docs/api_docs/#{file_name}_blueprint.md")
-      else
-        file = File.join(File.expand_path('.'), "/api_docs/#{file_name}_blueprint.md")
-      end
+      example_groups[1][:description_args].first.match(/(.+)\[(.+)\]/)
+      resource_description = $1
+      resource = $2
 
+      example_groups[0][:description_args].first.match(/(.+)\[(.+)\]/)
+      action_description = $1
+      action = $2.upcase
+
+      file = "#{api_docs_folder_path}#{file_name}_blueprint.md"
 
       File.open(file, 'a') do |f|
         # Resource & Action
@@ -77,16 +76,17 @@ RSpec.configure do |config|
           value.gsub("[","%5B").gsub("]","%5D")
         end
 
-        f.write "# #{action}"
+        unless File.readlines(file).grep(%r{#{resource}}).any?
+          f.write "## #{resource_description} [#{resource}]" 
+          f.write("\n")
+        end
+        f.write "### #{action_description} [#{action}]"
 
         unless params.empty?
          f.write "?#{params.join('&')}"
         end
 
         f.write("\n")
-        if extra_description.present?
-          f.write File.read(File.join(Rails.root, '/docs/api_docs', extra_description))
-        end
 
         # Request
         request_body = request.body.read
