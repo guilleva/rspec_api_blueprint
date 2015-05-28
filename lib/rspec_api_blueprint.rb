@@ -1,5 +1,6 @@
 require "rspec_api_blueprint/version"
 require "rspec_api_blueprint/string_extensions"
+require "rspec_api_blueprint/spec_blueprint_translator"
 
 RSpec.configure do |config|
   config.before(:suite) do
@@ -31,29 +32,13 @@ RSpec.configure do |config|
   end
 
   config.after(:each, type: :request) do |example|
-    next unless example.metadata[:document] === true
+    translator = SpecBlueprintTranslator.new(example, request, response)
 
-    if response
-      next if action_group.nil? || resource_group.nil?
-
-      # #   Group Name
-      # ##  Collection [/collection]
-      # ### Action Name [GET]
-
-
-      resource_group[:description_args].first.match(/(.+)\[(.+)\]/)
-      resource_description = $1
-      resource = $2
-
-      action_group[:description_args].first.match(/(.+)\[(.+)\]/)
-      action_description = $1
-      action = $2.upcase
-
-      file = "#{api_docs_folder_path}#{file_name}_blueprint.md"
-
-      SpecBlueprintTranslator.new(example).flush
-
-      end unless response.status == 401 || response.status == 403 || response.status == 301
+    if translator.can_make_blueprint?
+      translator.open_file_from_grouping
+      translator.write_resource_to_file
+      translator.write_action_to_file
+      translator.close_file
     end
   end
 end
@@ -63,78 +48,3 @@ def api_docs_folder_path
 
   File.join(File.expand_path('.'), '/api_docs/')
 end
-
-def write_resource_if_first(f, file, resource, resource_description)
-  unless File.readlines(file).grep(%r{#{resource}}).any?
-    f.write "## #{resource_description} [#{resource}]"
-    f.write("\n")
-  end
-end
-
-def write_action(f, action, action_description)
-  f.write "### #{action_description} [#{action}]"
-
-  query_strings = URI.decode(request.env['QUERY_STRING']).split('&')
-
-  params = query_strings.map do |value|
-    value.gsub("[","%5B").gsub("]","%5D")
-  end
-
-  unless params.empty?
-   f.write "?#{params.join('&')}"
-  end
-
-  f.write("\n")
-end
-
-def write_request(f)
-  request_body = request.body.read
-
-  current_env  = request.env ? request.env : request.headers
-
-  authorization_header = current_env['HTTP_AUTHORIZATION']   ||
-    env['X-HTTP_AUTHORIZATION'] ||
-    env['X_HTTP_AUTHORIZATION'] ||
-    env['REDIRECT_X_HTTP_AUTHORIZATION'] ||
-    env['AUTHORIZATION']
-
-
-  if request_body.present? || authorization_header.present? || request.env['QUERY_STRING']
-    f.write "+ Request #{request.content_type}\n\n"
-
-    if request.env['QUERY_STRING'].present?
-      f.write "+ Parameters\n\n".indent(4)
-      query_strings = URI.decode(request.env['QUERY_STRING']).split('&')
-
-      query_strings.each do |value|
-        key, example = value.split('=')
-        f.write "+ #{key} = '#{example}'\n".indent(12)
-      end
-      f.write("\n")
-    end
-
-    allowed_headers = %w(HTTP_AUTHORIZATION AUTHORIZATION CONTENT_TYPE)
-    f.write "+ Headers\n\n".indent(4)
-    current_env.each do |header, value|
-      next unless allowed_headers.include?(header)
-      header = header.gsub(/HTTP_/, '') if header == 'HTTP_AUTHORIZATION'
-      f.write "#{header}: #{value}\n".indent(12)
-    end
-    f.write "\n"
-
-    # Request Body
-    if request_body.present? && request.content_type.to_s == 'application/json'
-      f.write "+ Body\n\n".indent(4) if authorization_header
-      f.write "#{JSON.pretty_generate(JSON.parse(request_body))}\n\n".indent(authorization_header ? 12 : 8)
-    end
-  end
-end
-
-def write_response(f)
-  f.write "+ Response #{response.status} (#{response.content_type}; charset=#{response.charset})\n\n"
-
-  if response.body.present? && response.content_type.to_s =~ /application\/json/
-    f.write "#{JSON.pretty_generate(JSON.parse(response.body))}\n\n".indent(8)
-  end
-end
-

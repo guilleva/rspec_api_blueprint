@@ -1,17 +1,58 @@
 class SpecBlueprintTranslator
-  def init(example)
+  @@actions_covered = {}
+
+  def initialize(example, request, response)
     @action_group = example.example_group.metadata
     @resource_group = @action_group[:parent_example_group]
     @grouping_group = @resource_group[:parent_example_group]
 
+    @request = request
+    @response = response
+
+    # skip if any of these are nil
+  end
+
+  def can_make_blueprint?
+    @action_group.present? && @resource_group.present? && @grouping_group.present? && @action_group[:document] == true && basic_status?
+  end
+
+  def basic_status?
+    response.status == 200 || response.status == 201 || response.status == 202
+  end
+
+  def request
+    @request
+  end
+
+  def response
+    @response
+  end
+
+  def resource
+    @resource_group[:description_args].first.match(/(.+)\[(.+)\]/)
+    $2
+  end
+
+  def resource_description
+    @resource_group[:description_args].first.match(/(.+)\[(.+)\]/)
+    $1
+  end
+
+  def action
+    @action_group[:description_args].first.match(/(.+)\[(.+)\]/)
+    $2.upcase
+  end
+
+  def action_description
+    @action_group[:description_args].first.match(/(.+)\[(.+)\]/)
+    $1
+  end
+
+  def open_file_from_grouping
     @handle = File.open(file_path, 'a')
   end
 
-  def flush
-    write_resource_if_first(file, resource, resource_description)
-    write_action(action, action_description)
-    write_request
-    write_response
+  def close_file
     @handle.close
   end
 
@@ -22,21 +63,19 @@ class SpecBlueprintTranslator
     "#{api_docs_folder_path}#{file_name}_blueprint.md"
   end
 
-  def write_resource_if_first(file)
-    @resource_group[:description_args].first.match(/(.+)\[(.+)\]/)
-    resource_description = $1
-    resource = $2
+  def write_resource_to_file
+    return if @@actions_covered.has_key?(resource)
 
-    unless File.readlines(file).grep(%r{#{resource}}).any?
-      @handle.write "## #{resource_description} [#{resource}]"
-      @handle.write("\n")
-    end
+    @@actions_covered["#{resource}"] = []
+
+    @handle.write "## #{resource_description} [#{resource}]"
+    @handle.write("\n")
   end
 
-  def write_action
-    @action_group[:description_args].first.match(/(.+)\[(.+)\]/)
-    action_description = $1
-    action = $2.upcase
+  def write_action_to_file
+    return if @@actions_covered["#{resource}"].include?(action)
+
+    @@actions_covered["#{resource}"] << action
 
     @handle.write "### #{action_description} [#{action}]"
 
@@ -51,9 +90,11 @@ class SpecBlueprintTranslator
     end
 
     @handle.write("\n")
+    write_request_to_file
+    write_response_to_file
   end
 
-  def write_request
+  def write_request_to_file
     request_body = request.body.read
 
     current_env  = request.env ? request.env : request.headers
@@ -96,7 +137,7 @@ class SpecBlueprintTranslator
     end
   end
 
-  def write_response
+  def write_response_to_file
     @handle.write "+ Response #{response.status} (#{response.content_type}; charset=#{response.charset})\n\n"
 
     if response.body.present? && response.content_type.to_s =~ /application\/json/
