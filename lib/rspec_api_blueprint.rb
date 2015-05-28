@@ -11,7 +11,7 @@ RSpec.configure do |config|
   end
 
   config.after(:suite) do
-    append = ->(handle, file){ handle.puts File.read(File.join(api_docs_folder_path, file)) }
+    append = -> (handle, file){ handle.puts File.read(File.join(api_docs_folder_path, file)) }
 
     File.open(File.join(api_docs_folder_path ,'apiary.apib'), 'wb') do |apiary|
       append.call(apiary, 'introduction.md')
@@ -34,18 +34,12 @@ RSpec.configure do |config|
     next unless example.metadata[:document] === true
 
     if response
-      action_group = example.example_group.metadata
-      resource_group = action_group[:parent_example_group]
-      grouping_group = resource_group[:parent_example_group]
-
-      next if action_group.nil? || resource_group.nil? || grouping_group.nil?
+      next if action_group.nil? || resource_group.nil?
 
       # #   Group Name
       # ##  Collection [/collection]
       # ### Action Name [GET]
 
-      grouping_group[:description_args].first.match(/(.+)\sRequests/)
-      file_name = $1.gsub(' ','').underscore
 
       resource_group[:description_args].first.match(/(.+)\[(.+)\]/)
       resource_description = $1
@@ -57,11 +51,8 @@ RSpec.configure do |config|
 
       file = "#{api_docs_folder_path}#{file_name}_blueprint.md"
 
-      File.open(file, 'a') do |f|
-        write_resource_if_first(f, file, resource, resource_description)
-        write_action(f, action, action_description)
-        write_request(f)
-        write_response(f)
+      SpecBlueprintTranslator.new(example).flush
+
       end unless response.status == 401 || response.status == 403 || response.status == 301
     end
   end
