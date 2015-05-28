@@ -2,18 +2,25 @@ class SpecBlueprintTranslator
   @@actions_covered = {}
 
   def initialize(example, request, response)
-    @action_group = example.example_group.metadata
-    @resource_group = @action_group[:parent_example_group]
-    @grouping_group = @resource_group[:parent_example_group]
+    group_metas = []
+    group_meta = example.example_group.metadata
+
+    while group_meta.present?
+      group_metas << group_meta
+      group_meta = group_meta[:parent_example_group]
+    end
+
+    @example = example
+    @action_group = group_metas[-3]
+    @resource_group = group_metas[-2]
+    @grouping_group = group_metas[-1]
 
     @request = request
     @response = response
-
-    # skip if any of these are nil
   end
 
   def can_make_blueprint?
-    @action_group.present? && @resource_group.present? && @grouping_group.present? && @action_group[:document] == true && basic_status?
+    @action_group.present? && @resource_group.present? && @grouping_group.present? && @example.metadata[:document] === true && basic_status?
   end
 
   def basic_status?
@@ -80,14 +87,6 @@ class SpecBlueprintTranslator
     @handle.write "### #{action_description} [#{action}]"
 
     query_strings = URI.decode(request.env['QUERY_STRING']).split('&')
-
-    params = query_strings.map do |value|
-      value.gsub("[","%5B").gsub("]","%5D")
-    end
-
-    unless params.empty?
-     @handle.write "?#{params.join('&')}"
-    end
 
     @handle.write("\n")
     write_request_to_file
