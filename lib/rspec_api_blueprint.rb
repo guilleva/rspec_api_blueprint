@@ -44,7 +44,7 @@ RSpec.configure do |config|
 end
 
 def api_docs_folder_path
-  return File.join(Rails.root, '/docs/', '/api_docs/') if defined? Rails
+  return File.join(Rails.root, '/doc/', '/api_docs/') if defined? Rails
 
   File.join(File.expand_path('.'), '/api_docs/')
 end
