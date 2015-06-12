@@ -33,19 +33,36 @@ Write tests using the following convention:
 Example:
 
     describe 'Arenas Requests' do
-      describe 'GET /v1/arenas/{id}' do
-        it 'responds with the requested arena' do
-          arena = create :arena, foursquare_id: '5104'
-          get v1_arena_path(arena)
-
-          response.status.should eq(200)
+      describe 'arenas [/v1/arenas]' do
+          describe 'create an arena [POST]' do
+            it 'responds with the created arena' do
+              arena = build :arena, foursquare_id: '5104'
+              post v1_arena_path(arena)
+    
+              response.status.should eq(201)
+            end
+          end
         end
-      end
     end
 
 The output:
 
-    # GET /v1/arenas/{id}
+    # Arenas
+    
+    ## arenas [/v1/arenas]
+    
+    ### create an arena [POST]
+    + Request
+        + Headers
+            
+        + Body
+            {
+                "id": "4e9dbbc2-830b-41a9-b7db-9987735a0b2a",
+                "name": "Clinton St. Baking Co. & Restaurant",
+                "latitude": 40.721294,
+                "longitude": -73.983994,
+                "foursquare_id": "5104"
+            }
 
     + Response 200 (application/json)
 
