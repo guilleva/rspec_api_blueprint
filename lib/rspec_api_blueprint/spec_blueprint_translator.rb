@@ -27,32 +27,28 @@ class SpecBlueprintTranslator
     response.status == 200 || response.status == 201 || response.status == 202
   end
 
-  def request
-    @request
-  end
+  attr_reader :request
 
-  def response
-    @response
-  end
+  attr_reader :response
 
   def resource
     @resource_group[:description_args].first.match(/(.+)\[(.+)\]/)
-    $2
+    Regexp.last_match(2)
   end
 
   def resource_description
     @resource_group[:description_args].first.match(/(.+)\[(.+)\]/)
-    $1
+    Regexp.last_match(1)
   end
 
   def action
     @action_group[:description_args].first.match(/(.+)\[(.+)\]/)
-    $2.upcase
+    Regexp.last_match(2).upcase
   end
 
   def action_description
     @action_group[:description_args].first.match(/(.+)\[(.+)\]/)
-    $1
+    Regexp.last_match(1)
   end
 
   def open_file_from_grouping
@@ -65,13 +61,13 @@ class SpecBlueprintTranslator
 
   def file_path
     @grouping_group[:description_args].first.match(/(.+)\sRequests/)
-    file_name = $1.gsub(' ','').underscore
+    file_name = Regexp.last_match(1).gsub(' ', '').underscore
 
     "#{api_docs_folder_path}#{file_name}_blueprint.md"
   end
 
   def write_resource_to_file
-    return if @@actions_covered.has_key?(resource)
+    return if @@actions_covered.key?(resource)
 
     @@actions_covered["#{resource}"] = []
 
@@ -98,12 +94,10 @@ class SpecBlueprintTranslator
 
     current_env  = request.env ? request.env : request.headers
 
-    authorization_header = current_env['HTTP_AUTHORIZATION']   ||
-      env['X-HTTP_AUTHORIZATION'] ||
-      env['X_HTTP_AUTHORIZATION'] ||
-      env['REDIRECT_X_HTTP_AUTHORIZATION'] ||
-      env['AUTHORIZATION']
-
+    authorization_header = current_env['HTTP_AUTHORIZATION'] || env['X-HTTP_AUTHORIZATION'] ||
+                           env['X_HTTP_AUTHORIZATION'] ||
+                           env['REDIRECT_X_HTTP_AUTHORIZATION'] ||
+                           env['AUTHORIZATION']
 
     if request_body.present? || authorization_header.present? || request.env['QUERY_STRING']
       @handle.write "+ Request #{request.content_type}\n\n"
