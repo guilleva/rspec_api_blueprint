@@ -118,6 +118,7 @@ class SpecBlueprintTranslator
       current_env.each do |header, value|
         next unless allowed_headers.include?(header)
         header = header.gsub(/HTTP_/, '') if header == 'HTTP_AUTHORIZATION'
+        header = header.gsub(/CONTENT_TYPE/, 'CONTENT-TYPE') if header == 'CONTENT_TYPE'
         @handle.write "#{header}: #{value}\n".indent(12)
       end
       @handle.write "\n"
