@@ -3,6 +3,9 @@ require 'rspec_api_blueprint/string_extensions'
 require 'rspec_api_blueprint/spec_blueprint_translator'
 
 RSpec.configure do |config|
+  config.add_setting :api_docs_controllers, default: 'app/controllers'
+  config.add_setting :api_docs_models, default: 'app/models'
+
   config.before(:suite) do
     Dir.mkdir(api_docs_folder_path) unless Dir.exist?(api_docs_folder_path)
 
@@ -14,7 +17,7 @@ RSpec.configure do |config|
   config.after(:suite) do
     append = -> (handle, file) { handle.puts File.read(File.join(api_docs_folder_path, file)) }
 
-    File.open(File.join(api_docs_folder_path, 'apiary.apib'), 'wb') do |apiary|
+    File.open(File.join(api_docs_folder_path, 'apiary.apib'), 'wb+') do |apiary|
       append.call(apiary, 'introduction.md')
 
       Dir[File.join(api_docs_folder_path, '*_blueprint.md')].each do |file|
