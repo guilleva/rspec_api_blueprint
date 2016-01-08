@@ -89,7 +89,6 @@ class SpecBlueprintTranslator
   end
 
   def write_request_to_file
-    json_mime = Mime::Type.lookup('application/json')
     request_body = request.body.read
 
     current_env  = request.env ? request.env : request.headers
@@ -123,7 +122,7 @@ class SpecBlueprintTranslator
       @handle.write "\n"
 
       # Request Body
-      if request_body.present? && json_mime == request.content_type.to_s
+      if request_body.present? && %r{application/.*json.*}.match(request.content_type.to_s)
         @handle.write "+ Body\n\n".indent(4)
         @handle.write "#{JSON.pretty_generate(JSON.parse(request_body))}\n\n".indent(12)
       end
@@ -161,8 +160,7 @@ class SpecBlueprintTranslator
     current_env = request.env ? request.env : request.headers
     @handle.write "+ Response #{response.status} (#{current_env['CONTENT_TYPE']})\n\n"
 
-    json_mime = Mime::Type.lookup('application/json')
-    if response.body.present? && json_mime == response.content_type
+    if response.body.present? && %r{application/.*json.*}.match(request.content_type.to_s)
       @handle.write "#{JSON.pretty_generate(JSON.parse(response.body))}\n\n".indent(8)
     end
   end
